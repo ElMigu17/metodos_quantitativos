@@ -5,6 +5,10 @@ comeco <- function(){
   library(readr)
   library("dplyr") 
   library(stringr)
+  library(car)
+  library(lmtest)
+  library(tseries)
+  library(mfx)
   table <- read_csv("Documents/oitavo_periodo/testeteste/archive/sao-paulo-properties-april-2019.csv",
   col_types = cols(New = col_logical(),
   Negotiation_Type = col_character()))
@@ -17,6 +21,7 @@ limpeza <- function(table){
   table <- table[table$Latitude >= -24, ]
   table <- table[table$Latitude <= -22, ]
   table <- table[table$Longitude >= -48, ]
+  table <- table[table$Negotiation_Type == 'rent', ]
   attach(table)
   return(table)
 }
@@ -50,6 +55,7 @@ info_tabela_continuo <- function(coluna, nome){
 
 faz_regressao <- function(tabela){
   Districts_names <- District[!duplicated(District)]
+  Districts_names <- Districts_names[Districts_names != 'Vila Olimpia/São Paulo']
   Districts_names_limpos <- str_replace(Districts_names, '/São Paulo', '')
   Districts_names_limpos <- str_replace(Districts_names_limpos, ' ', '_')
   Districts_names_limpos <- str_replace(Districts_names_limpos, ' ', '_')
@@ -64,7 +70,7 @@ faz_regressao <- function(tabela){
 
 criacao_boleanos_distritos <- function(tabela, District){
   Districts_names <- District[!duplicated(District)]
-  Districts_names[Districts_names != 'São Domingos/São Paulo' ]
+  Districts_names <- Districts_names[Districts_names != 'Vila Olimpia/São Paulo' ]
   for (d in Districts_names){
     nome_distrito_limpo <- str_replace(d, '/São Paulo', '')
     nome_distrito_limpo <- str_replace(nome_distrito_limpo, ' ', '_')
@@ -73,6 +79,24 @@ criacao_boleanos_distritos <- function(tabela, District){
     tabela[nome_distrito_limpo] <- (District == d) *1
   }
   return(tabela)
+}
+
+### Funções de Teste
+
+## Heterocedasticidade
+
+teste_heterocedasticidade <- function(){
+  res <- resid(reg)
+  y_hat <- fitted(reg)
+  reg_white <- lm(res^2~y_hat+I(y_hat^2))
+  summary(reg_white)
+}
+
+## Teste normalidade 
+
+teste_normalidade <- function(reg){
+  residuo1 <- resid(reg)
+  jarque.bera.test(residuo1)
 }
 
 ### Fim das funções ####
@@ -115,5 +139,9 @@ summary(reg)
 
 
 ### Testes
+# Heterocedasticidade
+teste_heterocedasticidade()
+teste_normalidade(reg)
+resettest(reg)
 
 
