@@ -53,22 +53,25 @@ info_tabela_continuo <- function(coluna, nome){
 
 ### Funções Regressão
 
-faz_regressao <- function(tabela){
-  Districts_names <- District[!duplicated(District)]
-  Districts_names <- Districts_names[Districts_names != 'Vila Olimpia/São Paulo']
-  Districts_names_limpos <- str_replace(Districts_names, '/São Paulo', '')
-  Districts_names_limpos <- str_replace(Districts_names_limpos, ' ', '_')
-  Districts_names_limpos <- str_replace(Districts_names_limpos, ' ', '_')
-
-  outras_variaveis <- list("Size","Rooms","Toilets","Parking","Latitude","Longitude","Elevator","Furnished","Swimming_Pool","New")
+district_to_zone <- function(tabela){
+  zonas <- list( "Leste" = list("Aricanduva", "Carrão", "Vila Formosa", "Cidade Tiradentes", "Ermelino Matarazzo", "Ponte Rasa", "Guaianazes", "Lajeado", "Itaim Paulista", "Vila Curuçá", "Itaquera", "Cidade Líder", "José Bonifácio", "Parque do Carmo", "Mooca", "Água Rasa", "Belém", "Brás", "Moóca", "Pari", "Tatuapé", "Penha", "Artur Alvim", "Cangaíba", "Penha", "Vila Matilde", "São Mateus", "São Rafael", "São Miguel", "Jardim Helena", "Vila Jacuí", "Sapopemba", "Vila Prudente", "São Lucas", "Iguatemi"),
+              "Norte" = list("Medeiros", "Casa Verde", "Cachoeirinha", "Limão", "Brasilândia", "Freguesia do Ó", "Jaçanã", "Tremembé", "Perus", "Anhanguera", "Pirituba", "Jaraguá", "São Domingos", "Santana", "Tucuruvi", "Mandaqui", "Vila Maria", "Vila Guilherme", "Vila Medeiros"),
+              "Oeste" = list("Vila Olimpia", "Vila Madalena", "Butantã", "Morumbi", "Raposo Tavares", "Rio Pequeno", "Vila Sônia", "Lapa", "Barra Funda", "Jaguara", "Jaguaré", "Perdizes", "Vila Leopoldina", "Pinheiros", "Alto de Pinheiros", "Itaim Bibi", "Jardim Paulista", "Pinheiros"),
+              "Sul" = list("Brooklin", "Cursino", "Campo Limpo", "Capão Redondo", "Vila Andrade", "Capela do Socorro", "Cidade Dutra", "Grajaú", "Socorro", "Cidade Ademar", "Pedreira", "Ipiranga", "Sacomã", "Jabaquara", "M'Boi Mirim", "Jardim Ângela", "Jardim São Luis", "Parelheiros", "Marsilac", "Santo Amaro", "Campo Belo", "Campo Grande", "Santo Amaro", "Moema", "Saúde", "Vila Mariana"))
   
-  todas_variaveis<-append(Districts_names_limpos, outras_variaveis)
-  form <- as.formula(paste("(Price+Condo)~", paste(todas_variaveis, collapse="+")))
-  reg <- lm(form)
-  return(reg)
+
+  tabela$District <- str_replace(District, '/São Paulo', '')
+  Districts_names <- District[!duplicated(District)]
+  
+  for(i in seq(1,length(zonas))){
+    zona_em_analise <- zonas[i]
+    tabela[names(zonas)[i]] <- (District %in% zona_em_analise[[1]])*1
+  }
+  return(tabela)
+  
 }
 
-criacao_boleanos_distritos <- function(tabela, District){
+criacao_boleanos_zonas <- function(tabela, District){
   Districts_names <- District[!duplicated(District)]
   Districts_names <- Districts_names[Districts_names != 'Vila Olimpia/São Paulo' ]
   for (d in Districts_names){
@@ -80,6 +83,19 @@ criacao_boleanos_distritos <- function(tabela, District){
   }
   return(tabela)
 }
+faz_regressao <- function(tabela){
+
+  outras_variaveis <- list("Size","Rooms","Toilets","Parking","Latitude","Longitude","Elevator","Furnished","Swimming_Pool","New")
+  nome_zonas <- list("Leste", "Oeste", "Sul", "Norte")
+  
+  todas_variaveis<-append(nome_zonas, outras_variaveis)
+  form <- as.formula(paste("(Price+Condo)~", paste(todas_variaveis, collapse="+")))
+  print(form)
+  print(tabela)
+  reg <- lm(form)
+  return(reg)
+}
+
 
 ### Funções de Teste
 
@@ -132,7 +148,7 @@ info_tabela_discreto(New, list(0,1))
 #reg1 <- lm((Price+Condo)~Size+Rooms+Toilets+Parking+Latitude+Longitude+Elevator+Furnished+Swimming_Pool+New, data=tabela)
 #summary(reg1)
 
-tabela <- criacao_boleanos_distritos(tabela, District)
+tabela <- district_to_zone(tabela)
 attach(tabela)
 reg<-faz_regressao(tabela)
 summary(reg)
@@ -145,3 +161,8 @@ teste_normalidade(reg)
 resettest(reg)
 
 
+
+
+
+
+      
